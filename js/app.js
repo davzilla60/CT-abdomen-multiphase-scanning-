@@ -69,6 +69,7 @@
       ],
       diagram: "The kidneys filter contrast out of the blood and excrete it into the collecting systems, ureters and bladder.",
       bestFor: "Collecting systems and ureters, HCC capsule and washout, cholangiocarcinoma",
+      note: "Delayed images come from a different patient (Medical Segmentation Decathlon), aligned to the same body level.",
     },
   ];
   PHASES.forEach((p) => (p.series = SERIES[p.key] || null));
@@ -266,8 +267,10 @@
   const cache = {};
 
   // Union of every series' table positions, superior -> inferior, for synced scrolling.
-  const allZ = Array.from(new Set(PHASES.flatMap((p) => (p.series ? p.series.z.map((z) => Math.round(z * 2) / 2) : []))))
-    .sort((a, b) => b - a);
+  // Positions closer than 2 mm are merged so mixed slice spacings scroll evenly.
+  const allZ = PHASES.flatMap((p) => (p.series ? p.series.z : []))
+    .sort((a, b) => b - a)
+    .reduce((kept, z) => (kept.length && kept[kept.length - 1] - z < 2 ? kept : kept.concat(z)), []);
 
   function nearest(p, z) {
     const zs = p.series.z;
@@ -340,7 +343,7 @@
         note.hidden = r.covered;
         note.textContent = `${p.name} series doesn't reach this level · nearest slice shown`;
       }
-      $("ovPhase").textContent = p.name;
+      $("ovPhase").textContent = p.note ? `${p.name} · different patient` : p.name;
     }
     renderThumbs();
   }
@@ -393,7 +396,7 @@
 
       const tile = document.createElement("div");
       tile.className = "tile";
-      tile.innerHTML = `<img alt="${p.name} phase"><span class="tname">${p.name}</span><div class="miss" hidden></div>`;
+      tile.innerHTML = `<img alt="${p.name} phase"><span class="tname">${p.name}${p.note ? " · different patient" : ""}</span><div class="miss" hidden></div>`;
       tile.addEventListener("click", () => { stopPlayback(); selectPhase(n); });
       cmp.appendChild(tile);
 
@@ -441,6 +444,8 @@
     $("phaseName").textContent = p.name;
     $("phaseSummary").textContent = `${p.timing}. ${p.summary}`;
     $("phaseFindings").innerHTML = p.findings.map((f) => `<li>${f}</li>`).join("");
+    $("phaseNote").textContent = p.note || "";
+    $("phaseNote").hidden = !p.note;
     $("phaseDot").style.background = p.color;
     $("phaseDot").style.boxShadow = `0 0 14px ${p.color}`;
     $("trackFill").style.width = (n / (PHASES.length - 1)) * 100 + "%";
