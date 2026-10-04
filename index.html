@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Multiphase Abdomen &amp; Pelvis CT · Rad-Lad</title>
+  <meta name="description" content="Interactive teaching tool showing how IV contrast moves through the abdomen and pelvis in non-contrast, arterial, portal venous and delayed CT phases.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app" id="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 100 70" aria-hidden="true">
+        <polygon points="2,49 52,20 98,49 50,68" fill="#5f7d57"/>
+        <polygon points="8,20 31,7 51,19 31,31" fill="#6fdc7a"/>
+        <polygon points="31,19 64,0 96,19 64,38" fill="#1b2a22" stroke="#6fdc7a" stroke-width="1.5"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-name">Rad-Lad</span>
+        <span class="brand-tag">Illuminate the Invisible</span>
+      </div>
+    </div>
+    <div class="title">
+      <h1>Multiphase Abdomen &amp; Pelvis</h1>
+      <p>Follow the contrast. Explore each phase.</p>
+    </div>
+    <nav class="topnav">
+      <button type="button" class="navbtn" id="learnBtn" aria-haspopup="dialog">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5.5C5.5 4 8.5 4 12 6c3.5-2 6.5-2 9-.5V19c-2.5-1.5-5.5-1.5-9 .5-3.5-2-6.5-2-9-.5z M12 6v13.5"/></svg>
+        <span>Learn</span>
+      </button>
+      <a class="navbtn" href="#citation">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M15 3v4h4 M9 12h7 M9 16h7"/></svg>
+        <span>Source</span>
+      </a>
+    </nav>
+  </header>
+
+  <main class="grid">
+    <!-- Contrast journey diagram -->
+    <section class="panel journey" aria-labelledby="journeyTitle">
+      <div class="journey-copy">
+        <h2 id="journeyTitle">Contrast journey</h2>
+        <p id="journeyText">Watch how IV contrast travels through the body and progressively enhances the abdominal organs and urinary system across different phases.</p>
+      </div>
+      <svg id="diagram" class="diagram" viewBox="0 0 620 460" role="img" aria-label="Schematic of the abdomen showing where IV contrast is in the selected phase"></svg>
+      <div class="clock" aria-live="polite"><span class="clock-label">Time since injection</span><span id="clock">0 s</span></div>
+    </section>
+
+    <!-- CT viewer -->
+    <section class="panel viewer-panel" aria-labelledby="viewerTitle">
+      <div class="viewer-head">
+        <h2 id="viewerTitle">CT preview</h2>
+        <label class="switch">
+          <input type="checkbox" id="compareToggle">
+          <span class="track"><span class="knob"></span></span>
+          <span>Compare phases</span>
+        </label>
+      </div>
+      <div class="viewer" id="viewer" tabindex="0" aria-label="CT image stack. Scroll, drag, or use arrow keys to move through slices.">
+        <div class="single" id="single">
+          <img id="mainImg" alt="">
+          <span class="orient r">R</span><span class="orient l">L</span>
+          <div class="overlay tl" id="ovPhase"></div>
+          <div class="overlay tr" id="ovSlice"></div>
+          <div class="overlay bl">W 400 / L 40</div>
+          <div class="overlay br" id="ovZ"></div>
+          <div class="note" id="coverageNote" hidden></div>
+          <div class="placeholder" id="mainPlaceholder" hidden>
+            <strong>Delayed phase images coming soon</strong>
+            <span>The diagram already shows where contrast sits in this phase.</span>
+          </div>
+        </div>
+        <div class="compare" id="compare" hidden></div>
+        <div class="loading" id="loading" hidden>Loading…</div>
+      </div>
+      <div class="slicebar">
+        <button type="button" class="iconbtn sm" id="sliceUp" aria-label="Previous slice (superior)">▲</button>
+        <input type="range" id="sliceRange" min="0" max="0" value="0" aria-label="Slice position">
+        <button type="button" class="iconbtn sm" id="sliceDown" aria-label="Next slice (inferior)">▼</button>
+        <button type="button" class="iconbtn sm cine" id="cineBtn" aria-pressed="false" aria-label="Play through slices">Cine</button>
+      </div>
+      <div class="phase-card">
+        <span class="dot" id="phaseDot"></span>
+        <div>
+          <h3 id="phaseName">Non-contrast</h3>
+          <p id="phaseSummary"></p>
+          <ul id="phaseFindings"></ul>
+          <p class="phase-note" id="phaseNote" hidden></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls, timeline and thumbnails -->
+    <section class="panel controls" aria-label="Phase controls">
+      <div class="controls-row">
+        <div class="playback">
+          <button type="button" class="btn-primary" id="playBtn">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg>
+            <span id="playLabel">Start injection</span>
+          </button>
+          <button type="button" class="iconbtn" id="pauseBtn" aria-label="Pause">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h4v16H7zM13 4h4v16h-4z"/></svg>
+          </button>
+          <button type="button" class="iconbtn" id="resetBtn" aria-label="Reset to non-contrast">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <select id="speed" class="speed" aria-label="Playback speed">
+            <option value="0.5">0.5×</option>
+            <option value="1" selected>1×</option>
+            <option value="2">2×</option>
+          </select>
+        </div>
+        <div class="timeline">
+          <span class="timeline-label">Time since injection</span>
+          <div class="track-line"><div class="track-fill" id="trackFill"></div></div>
+          <div class="stops" id="stops" role="tablist" aria-label="CT phase"></div>
+        </div>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p class="disclaimer">Illustrative learning model · Timing varies by protocol and patient · Not for diagnostic use</p>
+    <div class="citation" id="citation">
+      <p><strong>Non-contrast, arterial and portal venous images:</strong>
+      Moawad, A. W., Fuentes, D., Morshid, A., Khalaf, A. M., Elmohr, M. M., Abusaif, A., Hazle, J. D., Kaseb, A. O., Hassan, M., Mahvash, A., Szklaruk, J., Qayyom, A., &amp; Elsayes, K. (2021). <em>Multimodality annotated HCC cases with and without advanced imaging segmentation</em> [Data set]. The Cancer Imaging Archive. <a href="https://doi.org/10.7937/TCIA.5FNA-0924" target="_blank" rel="noopener">https://doi.org/10.7937/TCIA.5FNA-0924</a></p>
+      <p><strong>Delayed phase images:</strong>
+      Antonelli, M., Reinke, A., Bakas, S. et al. The Medical Segmentation Decathlon. <em>Nat Commun</em> 13, 4128 (2022). <a href="https://doi.org/10.1038/s41467-022-30695-9" target="_blank" rel="noopener">https://doi.org/10.1038/s41467-022-30695-9</a></p>
+    </div>
+  </footer>
+
+  <dialog id="learnDialog" class="learn">
+    <form method="dialog" class="learn-inner">
+      <h2>How the phases work</h2>
+      <p>After an IV bolus, contrast reaches the arteries first, then drains through the gut and spleen into the portal vein and liver, and is finally filtered by the kidneys into the urinary tract.</p>
+      <table>
+        <thead><tr><th>Phase</th><th>Typical timing</th><th>Best for</th></tr></thead>
+        <tbody id="learnRows"></tbody>
+      </table>
+      <h3>Using the viewer</h3>
+      <ul>
+        <li>Click a phase on the timeline or a thumbnail to see contrast move in the diagram.</li>
+        <li>Scroll, drag, use the slider or the arrow keys to move through slices. Keys 1–4 switch phases.</li>
+        <li>Turn on <em>Compare phases</em> to scroll all phases together at the same level.</li>
+      </ul>
+      <button class="btn-primary" value="close">Got it</button>
+    </form>
+  </dialog>
+</div>
+
+<script src="js/series.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
